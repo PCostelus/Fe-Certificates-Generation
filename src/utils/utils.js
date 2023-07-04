@@ -6,3 +6,12 @@ export const aniStudiu = () => {
   }
   return arr;
 };
+
+export const getListForDropDown = (arr) => {
+  const returnedArr = [];
+  for (let item of arr) {
+    returnedArr.push({ value: item, label: item });
+  }
+
+  return returnedArr;
+};

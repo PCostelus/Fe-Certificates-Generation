@@ -1,5 +1,3 @@
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import {
@@ -10,9 +8,11 @@ import {
   MenuItem,
   Modal,
 } from '@mui/material';
-import { useState } from 'react';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { ThemeProvider } from 'styled-components';
 import { POZITII_CADRE_DIDACTICE } from '../../utils/constants';
+import { ROLE_MAPPER, ROLE_MAPPER_ID } from '../../utils/mappers';
 import {
   CustomTextField,
   DisplayInline,
@@ -22,15 +22,41 @@ import {
   ModalTitle,
 } from './SectionsStyle';
 
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  borderRadius: '15px',
+  width: 400,
+  bgcolor: 'background.paper',
+  boxShadow: 24,
+};
+const serverHost = process.env.REACT_APP_SERVER_HOST;
+
 export const AddProfessorModal = (props) => {
-  const { showModal, closeModal, errorMessage, professor, headerText } = props;
-  const [firstName, setFirstName] = useState(professor.nume || '');
-  const [lastName, setLastName] = useState(professor.name);
-  const [emailAddress, setEmailAddress] = useState(professor.adresa_email);
-  const [position, setPosition] = useState(professor.start_year);
-  const [faculty, setFaculty] = useState(professor.finish_year);
-  const [status, setStatus] = useState(professor.finish_year);
-  const [password, setPassword] = useState(professor.finish_year);
+  const {
+    showModal,
+    closeModal,
+    isCreating,
+    professor,
+    headerText,
+    faculties,
+  } = props;
+
+  const [errorMessage, setErrorMessage] = useState('');
+  const [firstName, setFirstName] = useState(professor.first_name || '');
+  const [lastName, setLastName] = useState(professor.last_name || '');
+  const [emailAddress, setEmailAddress] = useState(
+    professor.email_address || ''
+  );
+  const [position, setPosition] = useState(
+    ROLE_MAPPER_ID[professor.role] || ''
+  );
+  const [faculty, setFaculty] = useState(professor.faculty?.id || '');
+  const [status, setStatus] = useState(professor.status || '');
+  const [password, setPassword] = useState('');
+  console.log(professor);
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -38,17 +64,6 @@ export const AddProfessorModal = (props) => {
 
   const handleMouseDownPassword = (event) => {
     event.preventDefault();
-  };
-
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    borderRadius: '15px',
-    width: 400,
-    bgcolor: 'background.paper',
-    boxShadow: 24,
   };
 
   const handleFirstName = (e) => {
@@ -64,6 +79,7 @@ export const AddProfessorModal = (props) => {
   };
 
   const handlePosition = (e) => {
+    console.log(e.target.value);
     setPosition(e.target.value);
   };
 
@@ -78,6 +94,49 @@ export const AddProfessorModal = (props) => {
   const handlePassword = (e) => {
     setPassword(e.target.value);
   };
+
+  const getBody = () => ({
+    first_name: firstName,
+    last_name: lastName,
+    email_address: emailAddress,
+    role: ROLE_MAPPER[position],
+    status: status,
+    password: password,
+    faculty: faculty,
+  });
+
+  console.log(isCreating);
+  const apiActions = async () => {
+    try {
+      isCreating
+        ? await axios.post(`${serverHost}/user`, getBody())
+        : await axios.patch(`${serverHost}/user/${professor.id}`, getBody());
+
+      closeModal();
+      window.location.reload();
+    } catch (err) {
+      console.log(err.message);
+      setErrorMessage(err.message);
+    }
+  };
+
+  useEffect(() => {
+    setFirstName(professor.first_name || '');
+    setLastName(professor.last_name || '');
+    setLastName(professor.last_name || '');
+    setEmailAddress(professor.email_address || '');
+    setPosition(ROLE_MAPPER_ID[professor.role] || '');
+    setFaculty(professor.faculty?.id || '');
+    setStatus(professor.status || '');
+    setPassword('');
+  }, [
+    professor.email_address,
+    professor.faculty?.id,
+    professor.first_name,
+    professor.last_name,
+    professor.role,
+    professor.status,
+  ]);
 
   return (
     <>
@@ -140,7 +199,7 @@ export const AddProfessorModal = (props) => {
                 value={faculty}
                 onChange={handleFaculty}
               >
-                {POZITII_CADRE_DIDACTICE.map((option) => (
+                {faculties.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -182,7 +241,9 @@ export const AddProfessorModal = (props) => {
           </ThemeProvider>
           <Hr />
           <InputComponents>
-            <FacultyActionButton>Actualizare</FacultyActionButton>{' '}
+            <FacultyActionButton onClick={apiActions}>
+              {isCreating ? 'Creare' : 'Actualizare'}
+            </FacultyActionButton>{' '}
           </InputComponents>
           {errorMessage && (
             <div
@@ -191,7 +252,7 @@ export const AddProfessorModal = (props) => {
                 fontWeight: '600',
                 fontSize: '13px',
                 textAlign: 'center',
-                marginTop: 20,
+                marginBottom: 20,
               }}
             >
               {errorMessage}

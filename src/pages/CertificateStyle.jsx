@@ -19,7 +19,6 @@ export const Buttons = styledComponents.div`
 `;
 
 export const PageTitle = styledComponents.h2`
-    text-align: center;
     margin-bottom: 50px;
-    font-size: 45px
+    font-size: 35px
 `;

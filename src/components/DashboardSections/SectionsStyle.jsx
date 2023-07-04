@@ -10,8 +10,8 @@ export const ProfessorsContainer = styledComponents.div`
 `;
 
 export const CardContainer = styledComponents.div`
-    height: 90px;
-    background: #97c7a4;
+    background: ${(props) =>
+      props.status === 'complet' ? '#97c7a4' : '#9d8c20'};
     width: 100%;
     border: 2px solid #213555;
     border-radius: 10px;
@@ -50,7 +50,7 @@ export const FacultyActionButton = styledComponents.button`
 `;
 
 export const ModalTitle = styledComponents.h2`
-    margin: 20px 0 10px 20px 
+    margin: 30px 0 20px 20px 
 `;
 
 export const Hr = styledComponents.hr`

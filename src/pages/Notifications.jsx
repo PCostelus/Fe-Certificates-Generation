@@ -1,76 +1,43 @@
-import { useState } from 'react';
-import { AddFacultyModal } from '../components/DashboardSections/AddFacultyModal';
-import FacultiesSection from '../components/DashboardSections/Faculties';
-import ProfessorsSection from '../components/DashboardSections/Professors';
-import { StudentsSection } from '../components/DashboardSections/Students';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { NotificationsCard } from '../components/Notifications/NotificationCard';
-import {
-  Banner,
-  BannerButton,
-  Container,
-  NavBar,
-  SettingsTitle,
-} from './DashboardStyle';
 import { DisplayCards, NotificationTitle } from './NotificationStyle';
 
-const faculties = [
-  {
-    acronym: 'FIESC',
-    name: 'Facultatea de inginerie electrica si stiinta calculatoarelor',
-    start_year: 2020,
-    finish_year: 2021,
-    status: 'complet',
-  },
-  {
-    acronym: 'FIESC',
-    name: 'Facultatea de inginerie electrica si stiinta calculatoarelor',
-    start_year: 2020,
-    finish_year: 2021,
-    status: 'complet',
-  },
-  {
-    acronym: 'FIESC',
-    name: 'Facultatea de inginerie electrica si stiinta calculatoarelor',
-    start_year: 2020,
-    finish_year: 2021,
-    status: 'complet',
-  },
-  {
-    acronym: 'FIESC',
-    name: 'Facultatea de inginerie electrica si stiinta calculatoarelor',
-    start_year: 2020,
-    finish_year: 2021,
-    status: 'complet',
-  },
-  {
-    acronym: 'FIESC',
-    name: 'Facultatea de inginerie electrica si stiinta calculatoarelor',
-    start_year: 2020,
-    finish_year: 2021,
-    status: 'complet',
-  },
-];
+const serverHost = process.env.REACT_APP_SERVER_HOST;
 
-export const Notifications = () => {
-  const [showModal, setShowModal] = useState(false);
+export const Notifications = (props) => {
+  const [certificates, setCertificates] = useState([]);
 
-  const closeModal = () => {
-    setShowModal(false);
+  const getCertificates = async () => {
+    try {
+      const certificates = await axios.get(
+        `${serverHost}/certificate/notifications`,
+        {}
+      );
+      certificates.data.sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+      );
+
+      setCertificates(certificates.data);
+    } catch (err) {
+      console.log(err.message);
+    }
   };
 
+  useEffect(() => {
+    getCertificates();
+  }, []);
   return (
     <div>
       <NotificationTitle>Notificari</NotificationTitle>
       <DisplayCards>
-        {faculties.map((faculty) => (
-          <NotificationsCard faculty={faculty} />
-        ))}
-        {/* <AddFacultyModal
-        closeModal={closeModal}
-        showModal={showModal}
-        faculty={{}}
-        headerText={'Adaugare facultate'}
-      /> */}
+        {certificates.length &&
+          certificates.map((certificate) => (
+            <NotificationsCard
+              isAdmin={props.isAdmin}
+              certificate={certificate}
+            />
+          ))}
       </DisplayCards>
     </div>
   );

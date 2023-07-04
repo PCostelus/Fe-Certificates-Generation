@@ -9,6 +9,7 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { StatusCircle } from './CertificationsStyles';
 import { STATUS_TEXT_MAPPER } from '../../utils/mappers';
+import { MONTHS } from '../../utils/constants';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -31,6 +32,8 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
 }));
 
 export const CertificationsTable = (props) => {
+  const { certifications } = props;
+
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 700 }} aria-label='customized table'>
@@ -46,29 +49,38 @@ export const CertificationsTable = (props) => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {props.certifications.map((row, index) => (
-            <StyledTableRow key={index}>
-              <StyledTableCell component='th' scope='row'>
-                {row.student}
-              </StyledTableCell>
-              <StyledTableCell align='right'>
-                {row.nr_inregistrare}
-              </StyledTableCell>
-              <StyledTableCell align='center'>
-                <StatusCircle status={row.status}>
-                  {STATUS_TEXT_MAPPER[row.status]}
-                </StatusCircle>
-              </StyledTableCell>
-              <StyledTableCell align='right'>
-                {row.data_inregistarii}
-              </StyledTableCell>
-              <StyledTableCell align='right'>
-                {row.program_studii}
-              </StyledTableCell>
-              <StyledTableCell align='right'>{row.an_studiu}</StyledTableCell>
-              <StyledTableCell align='right'>{row.motiv}</StyledTableCell>
-            </StyledTableRow>
-          ))}
+          {certifications.length &&
+            certifications?.map((row, index) => {
+              const month = MONTHS[row?.registration_date?.split('.')[0]];
+              const day = row?.registration_date?.split('.')[1];
+              const year = row?.registration_date?.split('.')[2];
+              return (
+                <StyledTableRow key={index}>
+                  <StyledTableCell component='th' scope='row'>
+                    {row?.user?.last_name} {row?.user?.father_initial}.
+                    {row?.user?.first_name}
+                  </StyledTableCell>
+                  <StyledTableCell align='right'>
+                    {row.registration_number}
+                  </StyledTableCell>
+                  <StyledTableCell align='center'>
+                    <StatusCircle status={row.status}>
+                      {STATUS_TEXT_MAPPER[row.status]}
+                    </StatusCircle>
+                  </StyledTableCell>
+                  <StyledTableCell align='right'>
+                    {day} {month} {year}
+                  </StyledTableCell>
+                  <StyledTableCell align='right'>
+                    {row.study_program}
+                  </StyledTableCell>
+                  <StyledTableCell align='right'>
+                    {row.study_year}
+                  </StyledTableCell>
+                  <StyledTableCell align='right'>{row.reason}</StyledTableCell>
+                </StyledTableRow>
+              );
+            })}
         </TableBody>
       </Table>
     </TableContainer>

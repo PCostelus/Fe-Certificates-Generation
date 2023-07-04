@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import Modal from '@mui/material/Modal';
 
 import { Box, createTheme, MenuItem, ThemeProvider } from '@mui/material';
-// import { Button } from '../../common/Button';
-// import { checkALlFields, validateRomanianNumber } from '../../common/utils';
-// import axios from 'axios';
-// import jwt_decode from 'jwt-decode';
+import axios from 'axios';
+import jwt_decode from 'jwt-decode';
 import {
   AddObjectH2,
   BottomButtons,
@@ -13,18 +11,35 @@ import {
   CustomTextField,
   HrModal,
 } from './CertificationsStyles';
-import {
-  AN_STUDII,
-  DOMENII_STUDII,
-  FINANTARE,
-  PROGRAME_STUDII,
-} from '../../utils/constants';
+import { AN_STUDII, FINANTARE } from '../../utils/constants';
+import { getListForDropDown } from '../../utils/utils';
 
 const serverHost = process.env.REACT_APP_SERVER_HOST;
 const token = localStorage.getItem('accessToken');
 
+const faculty_id = '940cd01f-0da2-4af3-845a-f84b0c9bd834';
+const user_id = 'dbf3dc0c-8cb0-4ba4-8cc8-8d85329d313d';
+
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  borderRadius: '15px',
+  width: 400,
+  bgcolor: 'background.paper',
+  border: '2px solid transparent',
+  boxShadow: 24,
+  pt: 2,
+  px: 4,
+  pb: 3,
+};
+
 export const ModalAddCertification = (props) => {
-  const { showModal, closeModal } = props;
+  const { showModal, closeModal, faculty } = props;
+
+  const studyDomainsList = getListForDropDown(faculty?.study_domains || []);
+  const studyProgramsList = getListForDropDown(faculty?.study_programs || []);
   const [errorMessage, setErrorMessage] = useState('');
   const [reason, setReason] = useState('');
   const [studyDomain, setStudyDomain] = useState('');
@@ -57,21 +72,37 @@ export const ModalAddCertification = (props) => {
     setErrorMessage('');
   };
 
-  const reload = () => window.location.reload();
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    borderRadius: '15px',
-    width: 400,
-    bgcolor: 'background.paper',
-    border: '2px solid transparent',
-    boxShadow: 24,
-    pt: 2,
-    px: 4,
-    pb: 3,
+  const getBody = () => ({
+    study_domain: studyDomain,
+    study_program: studyProgram,
+    financial_status: financing,
+    study_year: studyYear,
+    reason,
+    faculty_id: decodeToken.faculty,
+    user: decodeToken.userId,
+  });
+
+  const apiActions = async () => {
+    try {
+      await axios.post(`${serverHost}/certificate`, getBody());
+
+      closeModal();
+      reload();
+    } catch (err) {
+      console.log(err.message);
+      setErrorMessage(err.message);
+    }
   };
+
+  const token = localStorage.getItem('accessToken');
+
+  let decodeToken;
+  if (token) {
+    decodeToken = jwt_decode(token);
+    console.log(decodeToken);
+  }
+
+  const reload = () => window.location.reload();
 
   return (
     <>
@@ -90,11 +121,12 @@ export const ModalAddCertification = (props) => {
                 value={studyDomain}
                 onChange={handleStudyDomain}
               >
-                {DOMENII_STUDII.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
+                {studyDomainsList &&
+                  studyDomainsList.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
               </CustomTextField>
               <CustomTextField
                 label='Programul De Studiu'
@@ -105,11 +137,12 @@ export const ModalAddCertification = (props) => {
                 value={studyProgram}
                 onChange={handleStudyProgram}
               >
-                {PROGRAME_STUDII.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
+                {studyProgramsList &&
+                  studyProgramsList.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
               </CustomTextField>
               <CustomTextField
                 label='Anul De Studiu'
@@ -164,11 +197,7 @@ export const ModalAddCertification = (props) => {
             >
               Iesire
             </Button>
-            <Button
-            //   onClick={createObject}
-            >
-              Adauga
-            </Button>
+            <Button onClick={apiActions}>Adauga</Button>
           </BottomButtons>
           {errorMessage && (
             <div

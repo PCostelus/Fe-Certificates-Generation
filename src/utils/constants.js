@@ -54,11 +54,11 @@ export const DOMENII_STUDII = [
 export const FINANTARE = [
   {
     label: 'Cu Taxa',
-    value: 'cu_taxa',
+    value: '0',
   },
   {
-    label: 'Fara Taxa',
-    value: 'fara_taxa',
+    label: 'Buget',
+    value: '1',
   },
 ];
 
@@ -76,3 +76,18 @@ export const POZITII_CADRE_DIDACTICE = [
     value: 'secretara',
   },
 ];
+
+export const MONTHS = {
+  1: 'Ianuarie',
+  2: 'Februarie',
+  3: 'Martie',
+  4: 'Aprilie',
+  5: 'Mai',
+  6: 'Iunie',
+  7: 'Iulie',
+  8: 'August',
+  9: 'Septembrie',
+  10: 'Octombrie',
+  11: 'Noiembrie',
+  12: 'Decembrie',
+};

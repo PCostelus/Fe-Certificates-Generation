@@ -40,6 +40,9 @@ export const Dashboard = (props) => {
   const closeModal = () => {
     setShowModal(false);
   };
+  if (faculties) {
+    window.history.replaceState(null, 'Faculties Page', '/dashboard/facultati');
+  }
 
   return (
     <Container>
@@ -112,6 +115,7 @@ export const Dashboard = (props) => {
           showModal={showModal}
           closeModal={closeModal}
           headerText={'Adaugare facultate'}
+          isCreating={true}
           faculty={{}}
         />
       )}

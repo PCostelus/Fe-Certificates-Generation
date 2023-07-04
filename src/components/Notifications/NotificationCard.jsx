@@ -6,7 +6,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { MenuItem, TextField } from '@mui/material';
-import { useState } from 'react';
+import axios from 'axios';
+import { MONTHS } from '../../utils/constants';
+import jwt_decode from 'jwt-decode';
 import {
   Button,
   CardBottomSection,
@@ -29,15 +31,81 @@ const signsIconsArr = [
   faFileCircleXmark,
 ];
 
+const serverHost = process.env.REACT_APP_SERVER_HOST;
+
 const signsIconsColorArr = ['#297b1e', '#9d8c20', '#ab2b2b'];
 
 export const NotificationsCard = (props) => {
+  const { certificate, isAdmin } = props;
+
+  const token = localStorage.getItem('accessToken');
+  let decodeToken;
+  if (token) {
+    decodeToken = jwt_decode(token);
+    console.log(decodeToken);
+  }
+
+  const month = MONTHS[certificate?.registration_date?.split('.')[0]];
+  const day = certificate?.registration_date?.split('.')[1];
+  const year = certificate?.registration_date?.split('.')[2];
+  const studyYearArr = [false, false, false, false];
+  studyYearArr[certificate.study_year - 1] = true;
+
+  const decanSignatures =
+    certificate.decan_signature === null
+      ? 1
+      : certificate.decan_signature === false
+      ? 2
+      : 0;
+
+  const headSecretarySignatures =
+    certificate.head_secretary_signature === null
+      ? 1
+      : certificate.head_secretary_signature === false
+      ? 2
+      : 0;
+
+  const secretarySignatures =
+    certificate.secretary_signature === null
+      ? 1
+      : certificate.secretary_signature === false
+      ? 2
+      : 0;
+
+  const handleSign = async () => {
+    try {
+      await axios.post(`${serverHost}/certificate/sign/${certificate.id}`, {
+        signer: decodeToken.userId,
+        signing: true,
+      });
+      reload();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const handleReject = async () => {
+    try {
+      await axios.post(`${serverHost}/certificate/sign/${certificate.id}`, {
+        signer: decodeToken.userId,
+        signing: false,
+      });
+      reload();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  const reload = () => window.location.reload();
+
   return (
     <CardContainer>
-      <CardTitle>Pamparau Costelus Emanuel</CardTitle>
+      <CardTitle>
+        {certificate?.user?.last_name} {certificate?.user?.father_initial}.{' '}
+        {certificate?.user?.first_name}
+      </CardTitle>
       <InLineInfo>
         <CardLabelSection>Nr. inregistrare</CardLabelSection>
-        <DisplayInfoToEnd>ghd45</DisplayInfoToEnd>
+        <DisplayInfoToEnd>{certificate.registration_number}</DisplayInfoToEnd>
       </InLineInfo>
       <InLineInfo>
         <CardLabelSection>Data inregistrarii</CardLabelSection>
@@ -50,30 +118,30 @@ export const NotificationsCard = (props) => {
               marginRight: '5px',
             }}
           />
-          29 Martie 2023
+          {day} {month} {year}
         </RegistryDate>
       </InLineInfo>
       <CardLabelSection style={{ marginTop: '10px' }}>
         An de studiu
       </CardLabelSection>
       <CardComp>
-        <CardStudyYear>1</CardStudyYear>
-        <CardStudyYear>2</CardStudyYear>
-        <CardStudyYear isSelected={true}>3</CardStudyYear>
-        <CardStudyYear>4</CardStudyYear>
+        <CardStudyYear isSelected={studyYearArr[0]}>1</CardStudyYear>
+        <CardStudyYear isSelected={studyYearArr[1]}>2</CardStudyYear>
+        <CardStudyYear isSelected={studyYearArr[2]}>3</CardStudyYear>
+        <CardStudyYear isSelected={studyYearArr[3]}>4</CardStudyYear>
       </CardComp>
       <CardTextField>
         <TextField
-          label='Domeniul'
+          label='Programul de studii'
           select
           disabled
           variant='outlined'
           size='small'
           style={{ width: '100%' }}
-          value={'Calculatoare'}
+          value={certificate.study_program}
         >
-          <MenuItem key={'calc'} value={'Calculatoare'}>
-            Calculatoare
+          <MenuItem key={'calc'} value={certificate.study_program}>
+            {certificate.study_program}
           </MenuItem>
         </TextField>
       </CardTextField>
@@ -87,7 +155,7 @@ export const NotificationsCard = (props) => {
           variant='outlined'
           size='small'
           style={{ width: '100%' }}
-          value={'Eliberarea bursei pentru a servi la munca'}
+          value={certificate.reason}
         />
       </CardTextField>
 
@@ -96,9 +164,9 @@ export const NotificationsCard = (props) => {
         <CardLabelSection>Semnatura Decan</CardLabelSection>
         <DisplayInfoToEnd>
           <FontAwesomeIcon
-            icon={signsIconsArr[1]}
+            icon={signsIconsArr[decanSignatures]}
             size='xl'
-            color={signsIconsColorArr[1]}
+            color={signsIconsColorArr[decanSignatures]}
           />
         </DisplayInfoToEnd>
       </InLineInfo>
@@ -106,9 +174,9 @@ export const NotificationsCard = (props) => {
         <CardLabelSection>Semnatura secretara-sef</CardLabelSection>
         <DisplayInfoToEnd>
           <FontAwesomeIcon
-            icon={signsIconsArr[0]}
+            icon={signsIconsArr[headSecretarySignatures]}
             size='xl'
-            color={signsIconsColorArr[0]}
+            color={signsIconsColorArr[headSecretarySignatures]}
           />
         </DisplayInfoToEnd>
       </InLineInfo>
@@ -116,29 +184,34 @@ export const NotificationsCard = (props) => {
         <CardLabelSection>Semnatura secretara</CardLabelSection>
         <DisplayInfoToEnd>
           <FontAwesomeIcon
-            icon={signsIconsArr[1]}
+            icon={signsIconsArr[secretarySignatures]}
             size='xl'
-            color={signsIconsColorArr[1]}
+            color={signsIconsColorArr[secretarySignatures]}
           />
         </DisplayInfoToEnd>
       </InLineInfo>
       <HrLine />
-      <CardBottomSection>
-        <CardButtons>
-          <Button style={{ marginRight: '7px' }}>Respinge</Button>
-          <Button
-            style={{
-              marginLeft: '7px',
-              width: '110px',
-              background: '#4F709C',
-              color: 'white',
-              borderColor: '#4F709C',
-            }}
-          >
-            Semneaza
-          </Button>
-        </CardButtons>
-      </CardBottomSection>
+      {isAdmin === false && (
+        <CardBottomSection>
+          <CardButtons>
+            <Button onClick={handleReject} style={{ marginRight: '7px' }}>
+              Respinge
+            </Button>
+            <Button
+              onClick={handleSign}
+              style={{
+                marginLeft: '7px',
+                width: '110px',
+                background: '#4F709C',
+                color: 'white',
+                borderColor: '#4F709C',
+              }}
+            >
+              Semneaza
+            </Button>
+          </CardButtons>
+        </CardBottomSection>
+      )}
     </CardContainer>
   );
 };

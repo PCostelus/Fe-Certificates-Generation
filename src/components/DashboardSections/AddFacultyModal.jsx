@@ -6,7 +6,8 @@ import {
   MenuItem,
   Modal,
 } from '@mui/material';
-import { useState } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import { ThemeProvider } from 'styled-components';
 import { aniStudiu } from '../../utils/utils';
 import {
@@ -18,31 +19,37 @@ import {
   ModalTitle,
 } from './SectionsStyle';
 
+const serverHost = process.env.REACT_APP_SERVER_HOST;
 const ANI_STUDIU = aniStudiu();
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  borderRadius: '15px',
+  width: 400,
+  bgcolor: 'background.paper',
+  boxShadow: 24,
+};
 
 export const AddFacultyModal = (props) => {
-  const { showModal, closeModal, errorMessage, faculty, headerText } = props;
-  const [name, setName] = useState(faculty.name);
-  const [acronym, setAcronym] = useState(faculty.acronym);
-  const [startYear, setStartYear] = useState(faculty.start_year);
-  const [finishYear, setFinishYear] = useState(faculty.finish_year);
+  const { showModal, closeModal, faculty, headerText, isCreating } = props;
 
-  const [studyDomainsValues, setStudyDomainsValues] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [name, setName] = useState(faculty.faculty_name || '');
+  const [acronym, setAcronym] = useState(faculty.faculty_acronym || '');
+  const [startYear, setStartYear] = useState(faculty.start_year || '');
+  const [finishYear, setFinishYear] = useState(faculty.end_year || '');
+
+  const [studyDomainsValues, setStudyDomainsValues] = useState(
+    faculty.study_domains || []
+  );
   const [studyDomainsCurrValue, setStudyDomainsCurrValue] = useState('');
 
-  const [studyProgramsValues, setStudyProgramsValues] = useState([]);
+  const [studyProgramsValues, setStudyProgramsValues] = useState(
+    faculty.study_programs || []
+  );
   const [studyProgramsCurrValue, setStudyProgramsCurrValue] = useState('');
-
-  const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    borderRadius: '15px',
-    width: 400,
-    bgcolor: 'background.paper',
-    boxShadow: 24,
-  };
 
   const handleStartYear = (e) => {
     setStartYear(e.target.value);
@@ -98,6 +105,44 @@ export const AddFacultyModal = (props) => {
     }
   };
 
+  const getBody = () => ({
+    faculty_name: name,
+    faculty_acronym: acronym,
+    start_year: startYear,
+    end_year: finishYear,
+    study_domains: studyDomainsValues,
+    study_programs: studyProgramsValues,
+  });
+
+  const apiActions = async () => {
+    try {
+      isCreating
+        ? await axios.post(`${serverHost}/faculty`, getBody())
+        : await axios.patch(`${serverHost}/faculty/${faculty.id}`, getBody());
+      closeModal();
+      window.location.reload();
+    } catch (err) {
+      console.log(err.message);
+      setErrorMessage(err.message);
+    }
+  };
+
+  useEffect(() => {
+    setName(faculty.faculty_name || '');
+    setAcronym(faculty.faculty_acronym || '');
+    setStartYear(faculty.start_year || '');
+    setFinishYear(faculty.end_year || '');
+    setStudyDomainsValues(faculty.study_domains || []);
+    setStudyProgramsValues(faculty.study_programs || []);
+  }, [
+    faculty.end_year,
+    faculty.faculty_acronym,
+    faculty.faculty_name,
+    faculty.start_year,
+    faculty.study_domains,
+    faculty.study_programs,
+  ]);
+
   return (
     <>
       <Modal open={showModal} onClose={closeModal}>
@@ -133,8 +178,8 @@ export const AddFacultyModal = (props) => {
                   value={startYear}
                   onChange={handleStartYear}
                 >
-                  {ANI_STUDIU.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
+                  {ANI_STUDIU.map((option, index) => (
+                    <MenuItem key={index} value={option.value}>
                       {option.label}
                     </MenuItem>
                   ))}
@@ -149,8 +194,8 @@ export const AddFacultyModal = (props) => {
                   value={finishYear}
                   onChange={handleFinishYear}
                 >
-                  {ANI_STUDIU.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
+                  {ANI_STUDIU.map((option, index) => (
+                    <MenuItem key={index} value={option.value}>
                       {option.label}
                     </MenuItem>
                   ))}
@@ -160,6 +205,7 @@ export const AddFacultyModal = (props) => {
                 <div className={'container'}>
                   {studyDomainsValues.map((item, index) => (
                     <Chip
+                      key={index}
                       size='small'
                       onDelete={() => handleDeleteStudyDomain(item, index)}
                       label={item}
@@ -181,6 +227,7 @@ export const AddFacultyModal = (props) => {
                 <div className={'container'}>
                   {studyProgramsValues.map((item, index) => (
                     <Chip
+                      key={index}
                       size='small'
                       onDelete={() => handleDeleteStudyProgram(item, index)}
                       label={item}
@@ -201,7 +248,9 @@ export const AddFacultyModal = (props) => {
           </ThemeProvider>
           <Hr />
           <InputComponents>
-            <FacultyActionButton>Actualizare</FacultyActionButton>
+            <FacultyActionButton onClick={apiActions}>
+              {isCreating ? 'Creare' : 'Actualizare'}
+            </FacultyActionButton>
           </InputComponents>
           {errorMessage && (
             <div
@@ -210,7 +259,7 @@ export const AddFacultyModal = (props) => {
                 fontWeight: '600',
                 fontSize: '13px',
                 textAlign: 'center',
-                marginTop: 20,
+                marginBottom: 20,
               }}
             >
               {errorMessage}

@@ -1,9 +1,8 @@
 import styledComponents from 'styled-components';
 
 export const NotificationTitle = styledComponents.h2`
-
     margin-left: 30px;
-    font-size: 30px
+    font-size: 35px
 `;
 
 export const DisplayCards = styledComponents.div`

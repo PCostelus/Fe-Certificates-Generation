@@ -1,8 +1,4 @@
-import {
-  faCalendar,
-  faTrash,
-  faPenToSquare,
-} from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPenToSquare } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   Paper,
@@ -16,8 +12,10 @@ import {
   TableRow,
   TextField,
 } from '@mui/material';
-import { useState } from 'react';
-import { Search } from '../../pages/AdeverinteStyle';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { Search } from '../../pages/CertificateStyle';
+import { POSITION_MAPPER } from '../../utils/mappers';
 import { AddProfessorModal } from './AddProfessorModal';
 import { DeleteItemModal } from './DeleteItemModal';
 
@@ -27,32 +25,19 @@ import {
   ProfessorsContainer,
 } from './SectionsStyle';
 
-const professors_arr = [
-  {
-    nume: 'Isopescu Maria',
-    adresa_email: 'isopescu.maria@usv.ro',
-    pozitie: 'secretar-sef',
-    facultate: 'Facultatea de inginerie electrica si stiinta calculatoarelor',
-    status: 'disponibila',
-  },
-  {
-    nume: 'Dimian Andrei',
-    adresa_email: 'dimian.andrei@usv.ro',
-    pozitie: 'rector',
-    facultate: 'Facultatea de inginerie electrica si stiinta calculatoarelor',
-    status: 'disponibil',
-  },
-];
+const serverHost = process.env.REACT_APP_SERVER_HOST;
+const API_URL = `${serverHost}/user`;
 
-const ProfessorsSection = (props) => {
+const ProfessorsSection = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  const [searchText, setSearchText] = useState('');
-  const [professors, setProfessors] = useState(professors_arr);
-  const [searchedProfessors, setSearchedProfessors] = useState(professors_arr);
+  const [isCreating, setIsCreating] = useState(true);
+  const [professors, setProfessors] = useState([]);
+  const [searchedProfessors, setSearchedProfessors] = useState([]);
   const [headerText, setHeaderText] = useState('Adaugare cadru didactic');
   const [professor, setProfessor] = useState({});
+  const [faculties, setFaculties] = useState([]);
+  const [idToDelete, setIdToDelete] = useState('');
 
   const closeAddModal = () => {
     setShowAddModal(false);
@@ -64,13 +49,17 @@ const ProfessorsSection = (props) => {
 
   const searchHandler = (e) => {
     const searchValue = e.target.value.toLowerCase().trim();
-    setSearchText(searchValue);
     if (searchValue === '') {
       setSearchedProfessors(professors);
       return;
     }
     const newProfessors = professors.filter((professor) => {
-      return professor.nume.toLowerCase().includes(searchValue);
+      return (
+        professor.first_name.toLowerCase().includes(searchValue) ||
+        professor.last_name.toLowerCase().includes(searchValue) ||
+        professor.faculty.faculty_name.toLowerCase().includes(searchValue) ||
+        professor.status.toLowerCase().includes(searchValue)
+      );
     });
     setSearchedProfessors(newProfessors);
   };
@@ -95,6 +84,43 @@ const ProfessorsSection = (props) => {
     },
   }));
 
+  const getFaculties = async () => {
+    try {
+      const faculties = await axios.get(`${serverHost}/faculty`, {});
+      faculties.data.sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+      );
+
+      const facultyList = [];
+      for (let faculty of faculties.data) {
+        facultyList.push({ value: faculty.id, label: faculty.faculty_name });
+      }
+
+      setFaculties(facultyList);
+    } catch (err) {
+      console.log(err.message);
+    }
+  };
+
+  const getProfessors = async () => {
+    try {
+      const professors = await axios.get(`${serverHost}/user/professors`, {});
+      professors.data.sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+      );
+
+      setSearchedProfessors(professors.data);
+      setProfessors(professors.data);
+    } catch (err) {
+      console.log(err.message);
+    }
+  };
+
+  useEffect(() => {
+    getFaculties();
+    getProfessors();
+  }, []);
+
   return (
     <ProfessorsContainer>
       <DisplayInline style={{ marginBottom: '40px' }}>
@@ -111,8 +137,9 @@ const ProfessorsSection = (props) => {
         <AddProfessorsButton
           onClick={() => {
             setHeaderText('Adaugare cadru didactic');
-            setProfessor({});
             setShowAddModal(true);
+            setIsCreating(true);
+            setProfessor({});
           }}
         >
           Adauga cadru didactic
@@ -135,13 +162,17 @@ const ProfessorsSection = (props) => {
             {searchedProfessors.map((row, index) => (
               <StyledTableRow key={index}>
                 <StyledTableCell component='th' scope='row'>
-                  {row.nume}
+                  {row.last_name} {row.first_name}
                 </StyledTableCell>
                 <StyledTableCell align='right'>
-                  {row.adresa_email}
+                  {row.email_address}
                 </StyledTableCell>
-                <StyledTableCell align='right'>{row.pozitie}</StyledTableCell>
-                <StyledTableCell align='right'>{row.facultate}</StyledTableCell>
+                <StyledTableCell align='right'>
+                  {POSITION_MAPPER[row.role]}
+                </StyledTableCell>
+                <StyledTableCell align='right'>
+                  {row.faculty.faculty_name}
+                </StyledTableCell>
                 <StyledTableCell align='right'>{row.status}</StyledTableCell>
                 <StyledTableCell align='right'>
                   <div>
@@ -155,6 +186,7 @@ const ProfessorsSection = (props) => {
                       }}
                       onClick={() => {
                         setHeaderText('Actualizare cadru didactic');
+                        setIsCreating(false);
                         setProfessor(row);
                         setShowAddModal(true);
                       }}
@@ -168,6 +200,7 @@ const ProfessorsSection = (props) => {
                         marginLeft: '10px',
                       }}
                       onClick={() => {
+                        setIdToDelete(row.id);
                         setShowDeleteModal(true);
                       }}
                     />
@@ -178,12 +211,27 @@ const ProfessorsSection = (props) => {
           </TableBody>
         </Table>
       </TableContainer>
-      <AddProfessorModal
-        closeModal={closeAddModal}
-        showModal={showAddModal}
-        professor={professor}
-        headerText={headerText}
-      />
+      {isCreating === false ? (
+        professors && (
+          <AddProfessorModal
+            closeModal={closeAddModal}
+            showModal={showAddModal}
+            professor={professor}
+            headerText={headerText}
+            isCreating={isCreating}
+            faculties={faculties}
+          />
+        )
+      ) : (
+        <AddProfessorModal
+          closeModal={closeAddModal}
+          showModal={showAddModal}
+          professor={professor}
+          headerText={headerText}
+          isCreating={isCreating}
+          faculties={faculties}
+        />
+      )}
       <DeleteItemModal
         closeModal={closeDeleteModal}
         showModal={showDeleteModal}
@@ -191,6 +239,8 @@ const ProfessorsSection = (props) => {
           'Toate legaturile acestui cadru didactic cu facultatea si cu adeverintele semnate for fi sterse. Adaugarea din nou a cadrului didactic nu va reface aceste legaturi!'
         }
         headerText={headerText}
+        apiURL={API_URL}
+        id={idToDelete}
       />
     </ProfessorsContainer>
   );

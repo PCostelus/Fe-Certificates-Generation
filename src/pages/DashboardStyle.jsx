@@ -6,7 +6,7 @@ export const Container = styledComponents.div`
 
 export const SettingsTitle = styledComponents.h2`
     margin-bottom: 50px;
-    font-size: 30px
+    font-size: 35px
 `;
 
 export const NavBar = styledComponents.div`
